@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yaojie.modules.inventory.mapper.InventoryRecordMapper">
+
+    <insert id="insert" parameterType="com.yaojie.modules.inventory.entity.InventoryRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO inventory_record (
+            medicine_id, batch_no, change_type, change_quantity, before_quantity, after_quantity,
+            source_type, source_id, operator_id, remark
+        ) VALUES (
+            #{medicineId}, #{batchNo}, #{changeType}, #{changeQuantity}, #{beforeQuantity}, #{afterQuantity},
+            #{sourceType}, #{sourceId}, #{operatorId}, #{remark}
+        )
+    </insert>
+</mapper>

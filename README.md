@@ -82,3 +82,10 @@ System/
 - 后端新增 `GET /api/v1/operation-logs`。
 - 日志页支持按模块和操作类型筛选。
 - 已新增回归脚本 [run-operation-log-smoke.ps1](C:/Users/30511/Desktop/System/scripts/run-operation-log-smoke.ps1)，可验证管理员登录、日志查询和筛选结果。
+## 2026-03-25 User Role Update
+
+- 已完成用户角色管理页前后端联调。
+- 后端新增 `GET /api/v1/users`、`GET /api/v1/roles`、`PUT /api/v1/users/{id}/roles`。
+- 用户页支持查看用户列表、角色列表，并对用户分配角色。
+- 当前角色管理权限仅开放给 `ADMIN`。
+- 已新增回归脚本 [run-user-role-smoke.ps1](C:/Users/30511/Desktop/System/scripts/run-user-role-smoke.ps1)，可验证用户列表、角色列表和角色分配接口。

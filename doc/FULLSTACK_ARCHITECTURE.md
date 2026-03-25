@@ -623,3 +623,23 @@ Operation log query scope:
 Regression command:
 
 - `powershell -ExecutionPolicy Bypass -File C:\Users\30511\Desktop\System\scripts\run-operation-log-smoke.ps1`
+## 2026-03-25 User Role Update
+
+Current delivered modules:
+
+- System: user list query, role list query, user-role assignment.
+
+User-role management scope:
+
+- Query all users
+- Query all roles
+- Assign roles for a user
+- Record assignment operation into `operation_log`
+
+Current permission boundary:
+
+- Only `ADMIN` can access user-role management APIs.
+
+Regression command:
+
+- `powershell -ExecutionPolicy Bypass -File C:\Users\30511\Desktop\System\scripts\run-user-role-smoke.ps1`

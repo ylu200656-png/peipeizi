@@ -608,3 +608,18 @@ Dashboard metrics:
 Regression command:
 
 - `powershell -ExecutionPolicy Bypass -File C:\Users\30511\Desktop\System\scripts\run-warning-dashboard-smoke.ps1`
+## 2026-03-25 Operation Log Update
+
+Current delivered modules:
+
+- Audit: operation log list query for admin and pharmacy manager.
+
+Operation log query scope:
+
+- Filter by `moduleName`
+- Filter by `operationType`
+- Return operator identity, business number, content, ip and created time
+
+Regression command:
+
+- `powershell -ExecutionPolicy Bypass -File C:\Users\30511\Desktop\System\scripts\run-operation-log-smoke.ps1`

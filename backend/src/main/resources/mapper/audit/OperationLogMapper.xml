@@ -4,6 +4,19 @@
     "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yaojie.modules.audit.mapper.OperationLogMapper">
 
+    <resultMap id="OperationLogVOMap" type="com.yaojie.modules.audit.vo.OperationLogVO">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="username" column="username"/>
+        <result property="realName" column="real_name"/>
+        <result property="moduleName" column="module_name"/>
+        <result property="operationType" column="operation_type"/>
+        <result property="businessNo" column="business_no"/>
+        <result property="content" column="content"/>
+        <result property="ip" column="ip"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
     <insert id="insert" parameterType="com.yaojie.modules.audit.entity.OperationLog" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO operation_log (
             user_id, module_name, operation_type, business_no, content, ip
@@ -11,4 +24,29 @@
             #{userId}, #{moduleName}, #{operationType}, #{businessNo}, #{content}, #{ip}
         )
     </insert>
+
+    <select id="selectList" resultMap="OperationLogVOMap">
+        SELECT
+            ol.id,
+            ol.user_id,
+            u.username,
+            u.real_name,
+            ol.module_name,
+            ol.operation_type,
+            ol.business_no,
+            ol.content,
+            ol.ip,
+            ol.created_at
+        FROM operation_log ol
+        LEFT JOIN sys_user u ON ol.user_id = u.id
+        <where>
+            <if test="moduleName != null and moduleName != ''">
+                AND ol.module_name = #{moduleName}
+            </if>
+            <if test="operationType != null and operationType != ''">
+                AND ol.operation_type = #{operationType}
+            </if>
+        </where>
+        ORDER BY ol.id DESC
+    </select>
 </mapper>

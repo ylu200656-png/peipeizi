@@ -76,3 +76,9 @@ System/
 - 后端新增 `GET /api/v1/warnings`、`GET /api/v1/warnings/summary`、`GET /api/v1/stats/overview`。
 - 首页已接入药品数、供应商数、库存批次数、可用库存总量、开放预警数、今日采购金额、今日销售金额。
 - 已新增回归脚本 [run-warning-dashboard-smoke.ps1](C:/Users/30511/Desktop/System/scripts/run-warning-dashboard-smoke.ps1)，可验证预警汇总、预警列表和首页统计口径。
+## 2026-03-25 Operation Log Update
+
+- 已完成操作日志页前后端联调。
+- 后端新增 `GET /api/v1/operation-logs`。
+- 日志页支持按模块和操作类型筛选。
+- 已新增回归脚本 [run-operation-log-smoke.ps1](C:/Users/30511/Desktop/System/scripts/run-operation-log-smoke.ps1)，可验证管理员登录、日志查询和筛选结果。

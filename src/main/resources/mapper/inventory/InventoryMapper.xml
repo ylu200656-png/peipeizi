@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yaojie.modules.inventory.mapper.InventoryMapper">
+
+    <resultMap id="InventoryMap" type="com.yaojie.modules.inventory.entity.Inventory">
+        <id property="id" column="id"/>
+        <result property="medicineId" column="medicine_id"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="currentQuantity" column="current_quantity"/>
+        <result property="lockedQuantity" column="locked_quantity"/>
+        <result property="productionDate" column="production_date"/>
+        <result property="expiryDate" column="expiry_date"/>
+        <result property="lastInboundTime" column="last_inbound_time"/>
+        <result property="lastOutboundTime" column="last_outbound_time"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <resultMap id="InventoryItemVOMap" type="com.yaojie.modules.inventory.vo.InventoryItemVO">
+        <id property="id" column="id"/>
+        <result property="medicineId" column="medicine_id"/>
+        <result property="medicineCode" column="medicine_code"/>
+        <result property="medicineName" column="medicine_name"/>
+        <result property="specification" column="specification"/>
+        <result property="unit" column="unit"/>
+        <result property="isControlled" column="is_controlled"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="currentQuantity" column="current_quantity"/>
+        <result property="lockedQuantity" column="locked_quantity"/>
+        <result property="availableQuantity" column="available_quantity"/>
+        <result property="productionDate" column="production_date"/>
+        <result property="expiryDate" column="expiry_date"/>
+        <result property="lastInboundTime" column="last_inbound_time"/>
+        <result property="lastOutboundTime" column="last_outbound_time"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <resultMap id="InventoryBatchOptionVOMap" type="com.yaojie.modules.inventory.vo.InventoryBatchOptionVO">
+        <result property="medicineId" column="medicine_id"/>
+        <result property="medicineName" column="medicine_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="availableQuantity" column="available_quantity"/>
+        <result property="expiryDate" column="expiry_date"/>
+        <result property="salePrice" column="sale_price"/>
+        <result property="isControlled" column="is_controlled"/>
+    </resultMap>
+
+    <select id="selectByMedicineIdAndBatchNo" resultMap="InventoryMap">
+        SELECT *
+        FROM inventory
+        WHERE medicine_id = #{medicineId}
+          AND batch_no = #{batchNo}
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.yaojie.modules.inventory.entity.Inventory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO inventory (
+            medicine_id, batch_no, current_quantity, locked_quantity, production_date, expiry_date, last_inbound_time
+        ) VALUES (
+            #{medicineId}, #{batchNo}, #{currentQuantity}, #{lockedQuantity}, #{productionDate}, #{expiryDate}, #{lastInboundTime}
+        )
+    </insert>
+
+    <update id="updateInbound" parameterType="com.yaojie.modules.inventory.entity.Inventory">
+        UPDATE inventory
+        SET
+            current_quantity = #{currentQuantity},
+            production_date = #{productionDate},
+            expiry_date = #{expiryDate},
+            last_inbound_time = #{lastInboundTime}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateOutbound" parameterType="com.yaojie.modules.inventory.entity.Inventory">
+        UPDATE inventory
+        SET
+            current_quantity = #{currentQuantity},
+            last_outbound_time = #{lastOutboundTime}
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectList" resultMap="InventoryItemVOMap">
+        SELECT
+            i.id,
+            i.medicine_id,
+            m.medicine_code,
+            m.medicine_name,
+            m.specification,
+            m.unit,
+            m.is_controlled,
+            i.batch_no,
+            i.current_quantity,
+            i.locked_quantity,
+            CASE
+                WHEN i.expiry_date >= CURDATE() THEN (i.current_quantity - i.locked_quantity)
+                ELSE 0
+            END AS available_quantity,
+            i.production_date,
+            i.expiry_date,
+            i.last_inbound_time,
+            i.last_outbound_time,
+            i.updated_at
+        FROM inventory i
+        INNER JOIN medicine m ON i.medicine_id = m.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    m.medicine_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR m.medicine_code LIKE CONCAT('%', #{keyword}, '%')
+                    OR i.batch_no LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY i.expiry_date ASC, i.id DESC
+    </select>
+
+    <select id="selectAvailableBatches" resultMap="InventoryBatchOptionVOMap">
+        SELECT
+            i.medicine_id,
+            m.medicine_name,
+            i.batch_no,
+            (i.current_quantity - i.locked_quantity) AS available_quantity,
+            i.expiry_date,
+            m.sale_price,
+            m.is_controlled
+        FROM inventory i
+        INNER JOIN medicine m ON i.medicine_id = m.id
+        WHERE i.medicine_id = #{medicineId}
+          AND (i.current_quantity - i.locked_quantity) > 0
+          AND i.expiry_date >= CURDATE()
+        ORDER BY i.expiry_date ASC, i.id ASC
+    </select>
+</mapper>

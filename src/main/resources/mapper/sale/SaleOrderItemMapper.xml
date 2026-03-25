@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yaojie.modules.sale.mapper.SaleOrderItemMapper">
+
+    <insert id="batchInsert">
+        INSERT INTO sale_order_item (
+            sale_order_id, medicine_id, batch_no, quantity, sale_price, subtotal
+        ) VALUES
+        <foreach collection="items" item="item" separator=",">
+            (
+                #{item.saleOrderId},
+                #{item.medicineId},
+                #{item.batchNo},
+                #{item.quantity},
+                #{item.salePrice},
+                #{item.subtotal}
+            )
+        </foreach>
+    </insert>
+
+    <select id="selectBySaleOrderId" resultType="com.yaojie.modules.sale.vo.SaleOrderItemVO">
+        SELECT
+            soi.id,
+            soi.medicine_id,
+            m.medicine_name,
+            soi.batch_no,
+            soi.quantity,
+            soi.sale_price,
+            soi.subtotal
+        FROM sale_order_item soi
+        INNER JOIN medicine m ON soi.medicine_id = m.id
+        WHERE soi.sale_order_id = #{saleOrderId}
+        ORDER BY soi.id ASC
+    </select>
+</mapper>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yaojie.modules.system.mapper.SysUserMapper">
+
+    <resultMap id="SysUserResultMap" type="com.yaojie.modules.system.entity.SysUser">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="passwordHash" column="password_hash"/>
+        <result property="realName" column="real_name"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="selectByUsername" resultMap="SysUserResultMap">
+        SELECT id, username, password_hash, real_name, status, created_at, updated_at
+        FROM sys_user
+        WHERE username = #{username}
+        LIMIT 1
+    </select>
+
+    <select id="selectById" resultMap="SysUserResultMap">
+        SELECT id, username, password_hash, real_name, status, created_at, updated_at
+        FROM sys_user
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="selectRoleCodesByUserId" resultType="string">
+        SELECT r.role_code
+        FROM sys_user_role ur
+        INNER JOIN sys_role r ON ur.role_id = r.id
+        WHERE ur.user_id = #{userId}
+        ORDER BY r.id
+    </select>
+
+    <select id="selectList" resultType="com.yaojie.modules.system.vo.SysUserVO">
+        SELECT
+            id,
+            username,
+            real_name,
+            status,
+            created_at,
+            updated_at
+        FROM sys_user
+        ORDER BY id ASC
+    </select>
+
+    <select id="selectUserViewById" resultType="com.yaojie.modules.system.vo.SysUserVO">
+        SELECT
+            id,
+            username,
+            real_name,
+            status,
+            created_at,
+            updated_at
+        FROM sys_user
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="selectRolesByUserId" resultType="com.yaojie.modules.system.vo.SysRoleVO">
+        SELECT
+            r.id,
+            r.role_code,
+            r.role_name
+        FROM sys_user_role ur
+        INNER JOIN sys_role r ON ur.role_id = r.id
+        WHERE ur.user_id = #{userId}
+        ORDER BY r.id
+    </select>
+</mapper>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yaojie.modules.warning.mapper.WarningRecordMapper">
+
+    <resultMap id="WarningRecordVOMap" type="com.yaojie.modules.warning.vo.WarningRecordVO">
+        <id property="id" column="id"/>
+        <result property="medicineId" column="medicine_id"/>
+        <result property="medicineCode" column="medicine_code"/>
+        <result property="medicineName" column="medicine_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="warningType" column="warning_type"/>
+        <result property="warningLevel" column="warning_level"/>
+        <result property="warningMessage" column="warning_message"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="handledAt" column="handled_at"/>
+    </resultMap>
+
+    <delete id="deleteOpenWarnings">
+        DELETE FROM warning_record WHERE status = 'OPEN'
+    </delete>
+
+    <insert id="insertLowStockWarnings">
+        INSERT INTO warning_record (medicine_id, batch_no, warning_type, warning_level, warning_message, status, created_at)
+        SELECT
+            m.id,
+            NULL,
+            'LOW_STOCK',
+            'WARN',
+            CONCAT(m.medicine_name, ' total stock is below safe stock'),
+            'OPEN',
+            NOW()
+        FROM medicine m
+        LEFT JOIN (
+            SELECT medicine_id, SUM(current_quantity) AS total_quantity
+            FROM inventory
+            WHERE expiry_date >= CURDATE()
+            GROUP BY medicine_id
+        ) s ON s.medicine_id = m.id
+        WHERE m.status = 1
+          AND IFNULL(s.total_quantity, 0) &lt;= m.safe_stock
+    </insert>
+
+    <insert id="insertExpiredWarnings">
+        INSERT INTO warning_record (medicine_id, batch_no, warning_type, warning_level, warning_message, status, created_at)
+        SELECT
+            m.id,
+            i.batch_no,
+            'EXPIRED',
+            'CRITICAL',
+            CONCAT(m.medicine_name, ' batch ', i.batch_no, ' is expired'),
+            'OPEN',
+            NOW()
+        FROM inventory i
+        INNER JOIN medicine m ON m.id = i.medicine_id
+        WHERE i.current_quantity > 0
+          AND i.expiry_date &lt; CURDATE()
+    </insert>
+
+    <insert id="insertExpirySoonWarnings">
+        INSERT INTO warning_record (medicine_id, batch_no, warning_type, warning_level, warning_message, status, created_at)
+        SELECT
+            m.id,
+            i.batch_no,
+            'EXPIRY_SOON',
+            'WARN',
+            CONCAT(m.medicine_name, ' batch ', i.batch_no, ' will expire soon'),
+            'OPEN',
+            NOW()
+        FROM inventory i
+        INNER JOIN medicine m ON m.id = i.medicine_id
+        WHERE i.current_quantity > 0
+          AND i.expiry_date >= CURDATE()
+          AND DATEDIFF(i.expiry_date, CURDATE()) &lt;= m.expiry_warning_days
+    </insert>
+
+    <select id="selectList" resultMap="WarningRecordVOMap">
+        SELECT
+            wr.id,
+            wr.medicine_id,
+            m.medicine_code,
+            m.medicine_name,
+            wr.batch_no,
+            wr.warning_type,
+            wr.warning_level,
+            wr.warning_message,
+            wr.status,
+            wr.created_at,
+            wr.handled_at
+        FROM warning_record wr
+        INNER JOIN medicine m ON wr.medicine_id = m.id
+        <where>
+            <if test="warningType != null and warningType != ''">
+                AND wr.warning_type = #{warningType}
+            </if>
+            <if test="status != null and status != ''">
+                AND wr.status = #{status}
+            </if>
+        </where>
+        ORDER BY wr.created_at DESC, wr.id DESC
+    </select>
+
+    <select id="selectLatestList" resultMap="WarningRecordVOMap">
+        SELECT
+            wr.id,
+            wr.medicine_id,
+            m.medicine_code,
+            m.medicine_name,
+            wr.batch_no,
+            wr.warning_type,
+            wr.warning_level,
+            wr.warning_message,
+            wr.status,
+            wr.created_at,
+            wr.handled_at
+        FROM warning_record wr
+        INNER JOIN medicine m ON wr.medicine_id = m.id
+        WHERE wr.status = 'OPEN'
+        ORDER BY wr.created_at DESC, wr.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectSummary" resultType="com.yaojie.modules.warning.vo.WarningSummaryVO">
+        SELECT
+            COUNT(CASE WHEN status = 'OPEN' THEN 1 END) AS open_total,
+            COUNT(CASE WHEN status = 'OPEN' AND warning_type = 'LOW_STOCK' THEN 1 END) AS low_stock_count,
+            COUNT(CASE WHEN status = 'OPEN' AND warning_type = 'EXPIRY_SOON' THEN 1 END) AS expiry_soon_count,
+            COUNT(CASE WHEN status = 'OPEN' AND warning_type = 'EXPIRED' THEN 1 END) AS expired_count
+        FROM warning_record
+    </select>
+</mapper>

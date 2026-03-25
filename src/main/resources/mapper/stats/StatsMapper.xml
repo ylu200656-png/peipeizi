@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yaojie.modules.stats.mapper.StatsMapper">
+
+    <select id="countMedicines" resultType="int">
+        SELECT COUNT(1)
+        FROM medicine
+        WHERE status = 1
+    </select>
+
+    <select id="countSuppliers" resultType="int">
+        SELECT COUNT(1)
+        FROM supplier
+        WHERE status = 1
+    </select>
+
+    <select id="countInventoryBatches" resultType="int">
+        SELECT COUNT(1)
+        FROM inventory
+    </select>
+
+    <select id="sumAvailableStock" resultType="int">
+        SELECT IFNULL(SUM(
+            CASE
+                WHEN expiry_date >= CURDATE() THEN (current_quantity - locked_quantity)
+                ELSE 0
+            END
+        ), 0)
+        FROM inventory
+    </select>
+
+    <select id="countOpenWarnings" resultType="int">
+        SELECT COUNT(1)
+        FROM warning_record
+        WHERE status = 'OPEN'
+    </select>
+
+    <select id="sumTodayPurchaseAmount" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(total_amount), 0)
+        FROM purchase_order
+        WHERE DATE(created_at) = CURDATE()
+    </select>
+
+    <select id="sumTodaySaleAmount" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(total_amount), 0)
+        FROM sale_order
+        WHERE DATE(created_at) = CURDATE()
+    </select>
+</mapper>

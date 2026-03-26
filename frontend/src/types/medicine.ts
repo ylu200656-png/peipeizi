@@ -35,12 +35,26 @@ export interface MedicineCategory {
   remark?: string
 }
 
+export interface MedicineCategoryForm {
+  categoryName: string
+  categoryCode: string
+  remark: string
+}
+
 export interface SupplierItem {
   id: number
   supplierName: string
   contactPerson?: string
   phone?: string
   address?: string
+  status: number
+}
+
+export interface SupplierForm {
+  supplierName: string
+  contactPerson: string
+  phone: string
+  address: string
   status: number
 }
 

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yaojie.modules.medicine.mapper.MedicineCategoryMapper">
+
+    <resultMap id="MedicineCategoryMap" type="com.yaojie.modules.medicine.entity.MedicineCategory">
+        <id property="id" column="id"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="categoryCode" column="category_code"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="MedicineCategoryMap">
+        SELECT id, category_name, category_code, remark
+        FROM medicine_category
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="selectByCategoryCode" resultMap="MedicineCategoryMap">
+        SELECT id, category_name, category_code, remark
+        FROM medicine_category
+        WHERE category_code = #{categoryCode}
+        LIMIT 1
+    </select>
+
+    <select id="selectManageList" resultType="com.yaojie.modules.medicine.vo.MedicineCategoryVO">
+        SELECT id, category_name, category_code, remark
+        FROM medicine_category
+        ORDER BY id ASC
+    </select>
+
+    <insert id="insert" parameterType="com.yaojie.modules.medicine.entity.MedicineCategory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO medicine_category (
+            category_name, category_code, remark
+        ) VALUES (
+            #{categoryName}, #{categoryCode}, #{remark}
+        )
+    </insert>
+
+    <update id="updateById" parameterType="com.yaojie.modules.medicine.entity.MedicineCategory">
+        UPDATE medicine_category
+        SET
+            category_name = #{categoryName},
+            category_code = #{categoryCode},
+            remark = #{remark}
+        WHERE id = #{id}
+    </update>
+</mapper>

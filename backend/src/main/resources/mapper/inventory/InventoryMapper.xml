@@ -116,6 +116,13 @@
           AND (current_quantity - locked_quantity) >= #{quantity}
     </update>
 
+    <update id="setCurrentQuantity">
+        UPDATE inventory
+        SET
+            current_quantity = #{currentQuantity}
+        WHERE id = #{id}
+    </update>
+
     <select id="selectList" resultMap="InventoryItemVOMap">
         SELECT
             i.id,
@@ -166,5 +173,23 @@
           AND (i.current_quantity - i.locked_quantity) > 0
           AND i.expiry_date >= CURDATE()
         ORDER BY i.expiry_date ASC, i.id ASC
+    </select>
+
+    <select id="selectFirstAvailableBatch" resultMap="InventoryBatchOptionVOMap">
+        SELECT
+            i.medicine_id,
+            m.medicine_name,
+            i.batch_no,
+            (i.current_quantity - i.locked_quantity) AS available_quantity,
+            i.expiry_date,
+            m.sale_price,
+            m.is_controlled
+        FROM inventory i
+        INNER JOIN medicine m ON i.medicine_id = m.id
+        WHERE i.medicine_id = #{medicineId}
+          AND (i.current_quantity - i.locked_quantity) > 0
+          AND i.expiry_date >= CURDATE()
+        ORDER BY i.expiry_date ASC, i.id ASC
+        LIMIT 1
     </select>
 </mapper>

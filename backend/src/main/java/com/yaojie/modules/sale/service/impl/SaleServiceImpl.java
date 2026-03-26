@@ -8,6 +8,7 @@ import com.yaojie.modules.inventory.entity.Inventory;
 import com.yaojie.modules.inventory.entity.InventoryRecord;
 import com.yaojie.modules.inventory.mapper.InventoryMapper;
 import com.yaojie.modules.inventory.mapper.InventoryRecordMapper;
+import com.yaojie.modules.inventory.vo.InventoryBatchOptionVO;
 import com.yaojie.modules.medicine.entity.Medicine;
 import com.yaojie.modules.medicine.mapper.MedicineMapper;
 import com.yaojie.modules.sale.dto.SaleCreateItemRequest;
@@ -83,7 +84,10 @@ public class SaleServiceImpl implements SaleService {
                 throw new BusinessException(ResultCode.MEDICINE_NOT_FOUND);
             }
 
-            Inventory inventory = inventoryMapper.selectByMedicineIdAndBatchNo(item.getMedicineId(), item.getBatchNo());
+            String batchNo = resolveBatchNo(item);
+            item.setBatchNo(batchNo);
+
+            Inventory inventory = inventoryMapper.selectByMedicineIdAndBatchNo(item.getMedicineId(), batchNo);
             if (inventory == null) {
                 throw new BusinessException(ResultCode.INVENTORY_NOT_FOUND);
             }
@@ -216,5 +220,16 @@ public class SaleServiceImpl implements SaleService {
 
     private String generateOrderNo() {
         return "SO-" + LocalDateTime.now().format(ORDER_NO_FORMATTER);
+    }
+
+    private String resolveBatchNo(SaleCreateItemRequest item) {
+        if (item.getBatchNo() != null && !item.getBatchNo().trim().isEmpty()) {
+            return item.getBatchNo().trim();
+        }
+        InventoryBatchOptionVO batch = inventoryMapper.selectFirstAvailableBatch(item.getMedicineId());
+        if (batch == null) {
+            throw new BusinessException(ResultCode.INVENTORY_NOT_FOUND, "No available batch for the selected medicine");
+        }
+        return batch.getBatchNo();
     }
 }

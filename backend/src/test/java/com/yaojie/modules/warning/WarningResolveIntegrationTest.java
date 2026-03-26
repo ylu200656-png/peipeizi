@@ -2,6 +2,7 @@ package com.yaojie.modules.warning;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yaojie.common.utils.PasswordUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,11 @@ class WarningResolveIntegrationTest {
         applyWarningSchemaPatch();
         cleanTestData();
         insertTestData();
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanTestData();
     }
 
     @Test

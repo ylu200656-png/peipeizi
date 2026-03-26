@@ -7,13 +7,48 @@
     <resultMap id="SupplierMap" type="com.yaojie.modules.medicine.entity.Supplier">
         <id property="id" column="id"/>
         <result property="supplierName" column="supplier_name"/>
+        <result property="contactPerson" column="contact_person"/>
+        <result property="phone" column="phone"/>
+        <result property="address" column="address"/>
         <result property="status" column="status"/>
     </resultMap>
 
     <select id="selectById" resultMap="SupplierMap">
-        SELECT id, supplier_name, status
+        SELECT id, supplier_name, contact_person, phone, address, status
         FROM supplier
         WHERE id = #{id}
         LIMIT 1
     </select>
+
+    <select id="selectBySupplierName" resultMap="SupplierMap">
+        SELECT id, supplier_name, contact_person, phone, address, status
+        FROM supplier
+        WHERE supplier_name = #{supplierName}
+        LIMIT 1
+    </select>
+
+    <select id="selectManageList" resultType="com.yaojie.modules.medicine.vo.SupplierVO">
+        SELECT id, supplier_name, contact_person, phone, address, status
+        FROM supplier
+        ORDER BY status DESC, id ASC
+    </select>
+
+    <insert id="insert" parameterType="com.yaojie.modules.medicine.entity.Supplier" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO supplier (
+            supplier_name, contact_person, phone, address, status
+        ) VALUES (
+            #{supplierName}, #{contactPerson}, #{phone}, #{address}, #{status}
+        )
+    </insert>
+
+    <update id="updateById" parameterType="com.yaojie.modules.medicine.entity.Supplier">
+        UPDATE supplier
+        SET
+            supplier_name = #{supplierName},
+            contact_person = #{contactPerson},
+            phone = #{phone},
+            address = #{address},
+            status = #{status}
+        WHERE id = #{id}
+    </update>
 </mapper>

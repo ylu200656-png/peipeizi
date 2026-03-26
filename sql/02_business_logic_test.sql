@@ -18,16 +18,16 @@ TRUNCATE TABLE sys_user;
 SET FOREIGN_KEY_CHECKS = 1;
 
 INSERT INTO sys_role (role_code, role_name) VALUES
-('ADMIN', 'Admin'),
-('PHARMACY_MANAGER', 'Pharmacy Manager'),
-('INVENTORY_MANAGER', 'Inventory Manager'),
-('SALES_CLERK', 'Sales Clerk');
+('ADMIN', '系统管理员'),
+('PHARMACY_MANAGER', '药房管理员'),
+('INVENTORY_MANAGER', '库存管理员'),
+('SALES_CLERK', '销售员');
 
 INSERT INTO sys_user (username, password_hash, real_name, status) VALUES
-('admin', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', 'Admin User', 1),
-('manager', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', 'Manager User', 1),
-('stocker', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', 'Stock User', 1),
-('clerk', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', 'Clerk User', 1);
+('admin', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', '系统管理员', 1),
+('manager', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', '药房管理员', 1),
+('stocker', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', '库存管理员', 1),
+('clerk', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', '销售员', 1);
 
 INSERT INTO sys_user_role (user_id, role_id)
 SELECT u.id, r.id
@@ -39,24 +39,24 @@ WHERE (u.username = 'admin' AND r.role_code = 'ADMIN')
    OR (u.username = 'clerk' AND r.role_code = 'SALES_CLERK');
 
 INSERT INTO medicine_category (category_name, category_code, remark) VALUES
-('Antibiotic', 'ANTIBIOTIC', 'Normal medicine category'),
-('Controlled', 'CONTROLLED', 'Controlled medicine category');
+('抗生素类', 'ANTIBIOTIC', '普通药品分类'),
+('管制药品类', 'CONTROLLED', '管制药品分类');
 
 INSERT INTO supplier (supplier_name, contact_person, phone, address, status) VALUES
-('Chongqing Demo Pharma', 'Tom', '13800000001', 'Chongqing Yuzhong Demo Road 1', 1),
-('Southwest Controlled Supply', 'Jerry', '13800000002', 'Chongqing Shapingba Demo Road 2', 1);
+('重庆示例药业有限公司', '张敏', '13800000001', '重庆市渝中区示例路 1 号', 1),
+('西南管制药品供应中心', '李强', '13800000002', '重庆市沙坪坝区示例路 2 号', 1);
 
 INSERT INTO medicine (
   medicine_code, medicine_name, category_id, specification, unit, manufacturer, supplier_id,
   purchase_price, sale_price, safe_stock, expiry_warning_days, is_controlled, status, remark
 ) VALUES
 (
-  'MED-001', 'Amoxicillin Capsule', 1, '0.25g*24', 'box', 'Chongqing Pharma Factory', 1,
-  12.50, 18.00, 20, 30, 0, 1, 'Normal medicine'
+  'MED-001', '阿莫西林胶囊', 1, '0.25g*24', '盒', '重庆制药厂', 1,
+  12.50, 18.00, 20, 30, 0, 1, '普通药品'
 ),
 (
-  'MED-002', 'Morphine Tablet', 2, '10mg*10', 'box', 'Southwest Pharma Factory', 2,
-  40.00, 58.00, 5, 60, 1, 1, 'Controlled medicine'
+  'MED-002', '吗啡片', 2, '10mg*10', '盒', '西南制药厂', 2,
+  40.00, 58.00, 5, 60, 1, 1, '管制药品'
 );
 
 CALL sp_purchase_inbound(

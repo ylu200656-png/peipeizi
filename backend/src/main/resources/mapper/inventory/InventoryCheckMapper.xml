@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yaojie.modules.inventory.mapper.InventoryCheckMapper">
+
+    <insert id="insert" parameterType="com.yaojie.modules.inventory.entity.InventoryCheck" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO inventory_check (
+            check_no, status, remark, created_by
+        ) VALUES (
+            #{checkNo}, #{status}, #{remark}, #{createdBy}
+        )
+    </insert>
+
+    <insert id="batchInsertItems">
+        INSERT INTO inventory_check_item (
+            check_id, medicine_id, batch_no, system_quantity, actual_quantity, difference_quantity, reason
+        ) VALUES
+        <foreach collection="items" item="item" separator=",">
+            (
+                #{item.checkId},
+                #{item.medicineId},
+                #{item.batchNo},
+                #{item.systemQuantity},
+                #{item.actualQuantity},
+                #{item.differenceQuantity},
+                #{item.reason}
+            )
+        </foreach>
+    </insert>
+
+    <resultMap id="InventoryCheckVOMap" type="com.yaojie.modules.inventory.vo.InventoryCheckVO">
+        <id property="id" column="id"/>
+        <result property="checkNo" column="check_no"/>
+        <result property="status" column="status"/>
+        <result property="remark" column="remark"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdByName" column="created_by_name"/>
+        <result property="executedBy" column="executed_by"/>
+        <result property="executedByName" column="executed_by_name"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="executedAt" column="executed_at"/>
+    </resultMap>
+
+    <resultMap id="InventoryCheckItemVOMap" type="com.yaojie.modules.inventory.vo.InventoryCheckItemVO">
+        <id property="id" column="id"/>
+        <result property="checkId" column="check_id"/>
+        <result property="medicineId" column="medicine_id"/>
+        <result property="medicineCode" column="medicine_code"/>
+        <result property="medicineName" column="medicine_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="systemQuantity" column="system_quantity"/>
+        <result property="actualQuantity" column="actual_quantity"/>
+        <result property="differenceQuantity" column="difference_quantity"/>
+        <result property="reason" column="reason"/>
+    </resultMap>
+
+    <select id="selectList" resultMap="InventoryCheckVOMap">
+        SELECT
+            ic.id,
+            ic.check_no,
+            ic.status,
+            ic.remark,
+            ic.created_by,
+            cu.real_name AS created_by_name,
+            ic.executed_by,
+            eu.real_name AS executed_by_name,
+            ic.created_at,
+            ic.executed_at
+        FROM inventory_check ic
+        LEFT JOIN sys_user cu ON ic.created_by = cu.id
+        LEFT JOIN sys_user eu ON ic.executed_by = eu.id
+        <where>
+            <if test="status != null and status != ''">
+                AND ic.status = #{status}
+            </if>
+        </where>
+        ORDER BY ic.created_at DESC, ic.id DESC
+    </select>
+
+    <select id="selectById" resultMap="InventoryCheckVOMap">
+        SELECT
+            ic.id,
+            ic.check_no,
+            ic.status,
+            ic.remark,
+            ic.created_by,
+            cu.real_name AS created_by_name,
+            ic.executed_by,
+            eu.real_name AS executed_by_name,
+            ic.created_at,
+            ic.executed_at
+        FROM inventory_check ic
+        LEFT JOIN sys_user cu ON ic.created_by = cu.id
+        LEFT JOIN sys_user eu ON ic.executed_by = eu.id
+        WHERE ic.id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="selectItemsByCheckId" resultMap="InventoryCheckItemVOMap">
+        SELECT
+            ici.id,
+            ici.check_id,
+            ici.medicine_id,
+            m.medicine_code,
+            m.medicine_name,
+            ici.batch_no,
+            ici.system_quantity,
+            ici.actual_quantity,
+            ici.difference_quantity,
+            ici.reason
+        FROM inventory_check_item ici
+        INNER JOIN medicine m ON ici.medicine_id = m.id
+        WHERE ici.check_id = #{checkId}
+        ORDER BY ici.id ASC
+    </select>
+
+    <update id="updateExecuted">
+        UPDATE inventory_check
+        SET
+            status = 'EXECUTED',
+            executed_by = #{executedBy},
+            executed_at = #{executedAt}
+        WHERE id = #{id}
+          AND status = 'DRAFT'
+    </update>
+</mapper>

@@ -13,4 +13,57 @@
             #{sourceType}, #{sourceId}, #{operatorId}, #{remark}
         )
     </insert>
+
+    <resultMap id="InventoryRecordVOMap" type="com.yaojie.modules.inventory.vo.InventoryRecordVO">
+        <id property="id" column="id"/>
+        <result property="medicineId" column="medicine_id"/>
+        <result property="medicineCode" column="medicine_code"/>
+        <result property="medicineName" column="medicine_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="changeType" column="change_type"/>
+        <result property="changeQuantity" column="change_quantity"/>
+        <result property="beforeQuantity" column="before_quantity"/>
+        <result property="afterQuantity" column="after_quantity"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="sourceId" column="source_id"/>
+        <result property="operatorId" column="operator_id"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="remark" column="remark"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="selectList" resultMap="InventoryRecordVOMap">
+        SELECT
+            ir.id,
+            ir.medicine_id,
+            m.medicine_code,
+            m.medicine_name,
+            ir.batch_no,
+            ir.change_type,
+            ir.change_quantity,
+            ir.before_quantity,
+            ir.after_quantity,
+            ir.source_type,
+            ir.source_id,
+            ir.operator_id,
+            u.real_name AS operator_name,
+            ir.remark,
+            ir.created_at
+        FROM inventory_record ir
+        INNER JOIN medicine m ON ir.medicine_id = m.id
+        LEFT JOIN sys_user u ON ir.operator_id = u.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    m.medicine_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR m.medicine_code LIKE CONCAT('%', #{keyword}, '%')
+                    OR ir.batch_no LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="sourceType != null and sourceType != ''">
+                AND ir.source_type = #{sourceType}
+            </if>
+        </where>
+        ORDER BY ir.created_at DESC, ir.id DESC
+    </select>
 </mapper>

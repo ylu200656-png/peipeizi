@@ -30,7 +30,7 @@ export const staticRoutes: RouteRecordRaw[] = [
       {
         path: 'medicine',
         name: 'medicine',
-        meta: { title: '药品档案', allowedRoles: [...MEDICINE_MANAGE_ROLES] },
+        meta: { title: '药品与主数据', allowedRoles: [...MEDICINE_MANAGE_ROLES] },
         component: () => import('@/views/medicine/index.vue'),
       },
       {
@@ -48,7 +48,7 @@ export const staticRoutes: RouteRecordRaw[] = [
       {
         path: 'inventory',
         name: 'inventory',
-        meta: { title: '库存管理', allowedRoles: [...INVENTORY_VIEW_ROLES] },
+        meta: { title: '库存与盘点', allowedRoles: [...INVENTORY_VIEW_ROLES] },
         component: () => import('@/views/inventory/index.vue'),
       },
       {

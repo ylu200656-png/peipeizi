@@ -19,10 +19,10 @@ const authStore = useAuthStore()
 
 const menuItems = [
   { path: '/', label: '首页' },
-  { path: '/medicine', label: '药品档案', allowedRoles: MEDICINE_MANAGE_ROLES },
+  { path: '/medicine', label: '药品与主数据', allowedRoles: MEDICINE_MANAGE_ROLES },
   { path: '/purchase', label: '采购入库', allowedRoles: PURCHASE_MANAGE_ROLES },
   { path: '/sale', label: '销售出库', allowedRoles: ['ADMIN', 'PHARMACY_MANAGER', 'SALES_CLERK'] },
-  { path: '/inventory', label: '库存管理', allowedRoles: INVENTORY_VIEW_ROLES },
+  { path: '/inventory', label: '库存与盘点', allowedRoles: INVENTORY_VIEW_ROLES },
   { path: '/warning', label: '预警中心', allowedRoles: WARNING_MANAGE_ROLES },
   { path: '/controlled', label: '管制药品', allowedRoles: CONTROLLED_VIEW_ROLES },
   { path: '/stats', label: '统计分析' },
@@ -48,7 +48,13 @@ async function handleLogout() {
 <template>
   <div class="layout-shell">
     <aside class="layout-aside">
-      <div class="brand">药捷</div>
+      <div class="brand">
+        <span class="brand-mark">药</span>
+        <div>
+          <div class="brand-title">药捷</div>
+          <div class="brand-subtitle">医药进销存中台</div>
+        </div>
+      </div>
       <nav class="menu">
         <RouterLink
           v-for="item in visibleMenuItems"
@@ -63,7 +69,10 @@ async function handleLogout() {
 
     <main class="layout-main">
       <div class="layout-toolbar">
-        <div class="toolbar-title">{{ $route.meta?.title || '药捷药品管理系统' }}</div>
+        <div>
+          <div class="toolbar-caption">YAOJIE CONSOLE</div>
+          <div class="toolbar-title">{{ $route.meta?.title || '药捷药品管理系统' }}</div>
+        </div>
         <div class="toolbar-user">
           <span>{{ userName }}</span>
           <button class="logout-button" type="button" @click="handleLogout">退出</button>
@@ -77,21 +86,52 @@ async function handleLogout() {
 <style scoped>
 .layout-shell {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 264px 1fr;
   min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(251, 191, 36, 0.12), transparent 34%),
+    linear-gradient(180deg, #f7fafc 0%, #eef4fb 100%);
 }
 
 .layout-aside {
   padding: 24px 18px;
-  background: linear-gradient(180deg, #0f172a, #162033);
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(17, 24, 39, 0.96)),
+    linear-gradient(120deg, rgba(59, 130, 246, 0.12), transparent);
   color: #f8fafc;
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
 }
 
 .brand {
-  margin-bottom: 24px;
-  font-size: 24px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 26px;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  color: #fff7ed;
+  font-size: 22px;
   font-weight: 700;
+  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.25);
+}
+
+.brand-title {
+  font-size: 22px;
+  font-weight: 800;
   letter-spacing: 2px;
+}
+
+.brand-subtitle {
+  margin-top: 3px;
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 12px;
 }
 
 .menu {
@@ -100,14 +140,21 @@ async function handleLogout() {
 }
 
 .menu-item {
-  padding: 10px 12px;
-  border-radius: 10px;
-  color: rgba(248, 250, 252, 0.88);
+  padding: 11px 14px;
+  border-radius: 12px;
+  color: rgba(248, 250, 252, 0.84);
+  transition: all 0.2s ease;
+}
+
+.menu-item:hover {
+  background: rgba(59, 130, 246, 0.14);
+  color: #ffffff;
 }
 
 .menu-item.router-link-active {
-  background: rgba(59, 130, 246, 0.22);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.24), rgba(14, 165, 233, 0.16));
   color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.16);
 }
 
 .layout-main {
@@ -121,9 +168,16 @@ async function handleLogout() {
   margin-bottom: 18px;
 }
 
+.toolbar-caption {
+  font-size: 11px;
+  letter-spacing: 1.8px;
+  color: #64748b;
+}
+
 .toolbar-title {
-  font-size: 24px;
-  font-weight: 700;
+  margin-top: 4px;
+  font-size: 28px;
+  font-weight: 800;
   color: #162033;
 }
 
@@ -136,10 +190,15 @@ async function handleLogout() {
 
 .logout-button {
   border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 999px;
+  padding: 8px 14px;
   background: #dbeafe;
   color: #1d4ed8;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.logout-button:hover {
+  background: #bfdbfe;
 }
 </style>

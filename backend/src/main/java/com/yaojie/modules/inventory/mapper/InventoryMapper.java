@@ -37,7 +37,14 @@ public interface InventoryMapper {
         @Param("lastOutboundTime") java.time.LocalDateTime lastOutboundTime
     );
 
+    int setCurrentQuantity(
+        @Param("id") Long id,
+        @Param("currentQuantity") Integer currentQuantity
+    );
+
     List<InventoryItemVO> selectList(@Param("keyword") String keyword);
 
     List<InventoryBatchOptionVO> selectAvailableBatches(@Param("medicineId") Long medicineId);
+
+    InventoryBatchOptionVO selectFirstAvailableBatch(@Param("medicineId") Long medicineId);
 }

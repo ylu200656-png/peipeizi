@@ -48,4 +48,55 @@
         FROM sale_order
         WHERE DATE(created_at) = CURDATE()
     </select>
+
+    <select id="selectPurchaseTrend" resultType="com.yaojie.modules.stats.vo.StatsDailyAmountVO">
+        SELECT
+            DATE(created_at) AS stat_date,
+            IFNULL(SUM(total_amount), 0) AS total_amount,
+            COUNT(1) AS order_count
+        FROM purchase_order
+        WHERE DATE(created_at) &gt;= #{startDate}
+        GROUP BY DATE(created_at)
+        ORDER BY stat_date ASC
+    </select>
+
+    <select id="selectSaleTrend" resultType="com.yaojie.modules.stats.vo.StatsDailyAmountVO">
+        SELECT
+            DATE(created_at) AS stat_date,
+            IFNULL(SUM(total_amount), 0) AS total_amount,
+            COUNT(1) AS order_count
+        FROM sale_order
+        WHERE DATE(created_at) &gt;= #{startDate}
+        GROUP BY DATE(created_at)
+        ORDER BY stat_date ASC
+    </select>
+
+    <select id="selectInventoryCategoryStats" resultType="com.yaojie.modules.stats.vo.StatsInventoryCategoryVO">
+        SELECT
+            mc.id AS category_id,
+            mc.category_name,
+            IFNULL(SUM(
+                CASE
+                    WHEN i.expiry_date &gt;= CURDATE() THEN (i.current_quantity - i.locked_quantity)
+                    ELSE 0
+                END
+            ), 0) AS available_quantity,
+            COUNT(DISTINCT i.id) AS batch_count
+        FROM medicine_category mc
+        LEFT JOIN medicine m ON m.category_id = mc.id AND m.status = 1
+        LEFT JOIN inventory i ON i.medicine_id = m.id
+        GROUP BY mc.id, mc.category_name
+        HAVING available_quantity &gt; 0 OR batch_count &gt; 0
+        ORDER BY available_quantity DESC, mc.id ASC
+    </select>
+
+    <select id="selectOpenWarningTypeStats" resultType="com.yaojie.modules.stats.vo.StatsWarningTypeVO">
+        SELECT
+            warning_type,
+            COUNT(1) AS total_count
+        FROM warning_record
+        WHERE status = 'OPEN'
+        GROUP BY warning_type
+        ORDER BY total_count DESC, warning_type ASC
+    </select>
 </mapper>

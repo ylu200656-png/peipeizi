@@ -35,7 +35,7 @@ import java.util.List;
 @Service
 public class PurchaseServiceImpl implements PurchaseService {
 
-    private static final DateTimeFormatter ORDER_NO_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final DateTimeFormatter ORDER_NO_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS");
 
     private final PurchaseOrderMapper purchaseOrderMapper;
     private final PurchaseOrderItemMapper purchaseOrderItemMapper;
@@ -158,27 +158,33 @@ public class PurchaseServiceImpl implements PurchaseService {
     }
 
     private void upsertInventory(PurchaseOrderItem item, PurchaseOrder purchaseOrder, Long operatorId, String remark) {
-        Inventory currentInventory = inventoryMapper.selectByMedicineIdAndBatchNo(item.getMedicineId(), item.getBatchNo());
-        int beforeQuantity = currentInventory == null ? 0 : currentInventory.getCurrentQuantity();
+        LocalDateTime now = LocalDateTime.now();
+
+        Inventory seedInventory = new Inventory();
+        seedInventory.setMedicineId(item.getMedicineId());
+        seedInventory.setBatchNo(item.getBatchNo());
+        seedInventory.setCurrentQuantity(0);
+        seedInventory.setLockedQuantity(0);
+        seedInventory.setProductionDate(item.getProductionDate());
+        seedInventory.setExpiryDate(item.getExpiryDate());
+        seedInventory.setLastInboundTime(now);
+        inventoryMapper.insertIgnore(seedInventory);
+
+        Inventory currentInventory = inventoryMapper.selectByMedicineIdAndBatchNoForUpdate(item.getMedicineId(), item.getBatchNo());
+        if (currentInventory == null) {
+            throw new BusinessException(ResultCode.INVENTORY_NOT_FOUND);
+        }
+
+        int beforeQuantity = currentInventory.getCurrentQuantity();
         int afterQuantity = beforeQuantity + item.getQuantity();
 
-        if (currentInventory == null) {
-            Inventory inventory = new Inventory();
-            inventory.setMedicineId(item.getMedicineId());
-            inventory.setBatchNo(item.getBatchNo());
-            inventory.setCurrentQuantity(afterQuantity);
-            inventory.setLockedQuantity(0);
-            inventory.setProductionDate(item.getProductionDate());
-            inventory.setExpiryDate(item.getExpiryDate());
-            inventory.setLastInboundTime(LocalDateTime.now());
-            inventoryMapper.insert(inventory);
-        } else {
-            currentInventory.setCurrentQuantity(afterQuantity);
-            currentInventory.setProductionDate(item.getProductionDate());
-            currentInventory.setExpiryDate(item.getExpiryDate());
-            currentInventory.setLastInboundTime(LocalDateTime.now());
-            inventoryMapper.updateInbound(currentInventory);
-        }
+        inventoryMapper.increaseQuantity(
+            currentInventory.getId(),
+            item.getQuantity(),
+            item.getProductionDate(),
+            item.getExpiryDate(),
+            now
+        );
 
         InventoryRecord record = new InventoryRecord();
         record.setMedicineId(item.getMedicineId());

@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yaojie.modules.controlled.mapper.ControlledMedicineMapper">
+
+    <resultMap id="ControlledMedicineVOMap" type="com.yaojie.modules.controlled.vo.ControlledMedicineVO">
+        <id property="id" column="id"/>
+        <result property="medicineCode" column="medicine_code"/>
+        <result property="medicineName" column="medicine_name"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="categoryName" column="category_name"/>
+        <result property="specification" column="specification"/>
+        <result property="unit" column="unit"/>
+        <result property="manufacturer" column="manufacturer"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="purchasePrice" column="purchase_price"/>
+        <result property="salePrice" column="sale_price"/>
+        <result property="safeStock" column="safe_stock"/>
+        <result property="expiryWarningDays" column="expiry_warning_days"/>
+        <result property="status" column="status"/>
+        <result property="remark" column="remark"/>
+        <result property="availableStock" column="available_stock"/>
+        <result property="batchCount" column="batch_count"/>
+        <result property="openWarningCount" column="open_warning_count"/>
+    </resultMap>
+
+    <resultMap id="ControlledBatchVOMap" type="com.yaojie.modules.controlled.vo.ControlledBatchVO">
+        <result property="batchNo" column="batch_no"/>
+        <result property="currentQuantity" column="current_quantity"/>
+        <result property="lockedQuantity" column="locked_quantity"/>
+        <result property="availableQuantity" column="available_quantity"/>
+        <result property="productionDate" column="production_date"/>
+        <result property="expiryDate" column="expiry_date"/>
+        <result property="lastInboundTime" column="last_inbound_time"/>
+        <result property="lastOutboundTime" column="last_outbound_time"/>
+        <result property="expired" column="is_expired"/>
+        <result property="expirySoon" column="is_expiry_soon"/>
+    </resultMap>
+
+    <resultMap id="ControlledRecordVOMap" type="com.yaojie.modules.controlled.vo.ControlledRecordVO">
+        <id property="id" column="id"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="changeType" column="change_type"/>
+        <result property="changeQuantity" column="change_quantity"/>
+        <result property="beforeQuantity" column="before_quantity"/>
+        <result property="afterQuantity" column="after_quantity"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="sourceId" column="source_id"/>
+        <result property="operatorId" column="operator_id"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="remark" column="remark"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <resultMap id="WarningRecordVOMap" type="com.yaojie.modules.warning.vo.WarningRecordVO">
+        <id property="id" column="id"/>
+        <result property="medicineId" column="medicine_id"/>
+        <result property="medicineCode" column="medicine_code"/>
+        <result property="medicineName" column="medicine_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="warningType" column="warning_type"/>
+        <result property="warningLevel" column="warning_level"/>
+        <result property="warningMessage" column="warning_message"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="handledAt" column="handled_at"/>
+    </resultMap>
+
+    <select id="selectOverview" resultType="com.yaojie.modules.controlled.vo.ControlledOverviewVO">
+        SELECT
+            IFNULL((
+                SELECT COUNT(1)
+                FROM medicine
+                WHERE is_controlled = 1
+                  AND status = 1
+            ), 0) AS medicine_count,
+            IFNULL((
+                SELECT SUM(
+                    CASE
+                        WHEN i.expiry_date >= CURDATE() THEN (i.current_quantity - i.locked_quantity)
+                        ELSE 0
+                    END
+                )
+                FROM inventory i
+                INNER JOIN medicine m ON i.medicine_id = m.id
+                WHERE m.is_controlled = 1
+            ), 0) AS available_stock_total,
+            IFNULL((
+                SELECT COUNT(1)
+                FROM warning_record wr
+                INNER JOIN medicine m ON wr.medicine_id = m.id
+                WHERE m.is_controlled = 1
+                  AND wr.status = 'OPEN'
+            ), 0) AS open_warning_count,
+            IFNULL((
+                SELECT COUNT(1)
+                FROM inventory i
+                INNER JOIN medicine m ON i.medicine_id = m.id
+                WHERE m.is_controlled = 1
+                  AND i.current_quantity > 0
+                  AND i.expiry_date >= CURDATE()
+                  AND DATEDIFF(i.expiry_date, CURDATE()) &lt;= m.expiry_warning_days
+            ), 0) AS expiring_batch_count
+    </select>
+
+    <select id="selectMedicineList" resultMap="ControlledMedicineVOMap">
+        SELECT
+            m.id,
+            m.medicine_code,
+            m.medicine_name,
+            m.category_id,
+            c.category_name,
+            m.specification,
+            m.unit,
+            m.manufacturer,
+            m.supplier_id,
+            s.supplier_name,
+            m.purchase_price,
+            m.sale_price,
+            m.safe_stock,
+            m.expiry_warning_days,
+            m.status,
+            m.remark,
+            IFNULL(stock.available_stock, 0) AS available_stock,
+            IFNULL(stock.batch_count, 0) AS batch_count,
+            IFNULL(warn.open_warning_count, 0) AS open_warning_count
+        FROM medicine m
+        INNER JOIN medicine_category c ON m.category_id = c.id
+        LEFT JOIN supplier s ON m.supplier_id = s.id
+        LEFT JOIN (
+            SELECT
+                medicine_id,
+                SUM(
+                    CASE
+                        WHEN expiry_date >= CURDATE() THEN (current_quantity - locked_quantity)
+                        ELSE 0
+                    END
+                ) AS available_stock,
+                COUNT(1) AS batch_count
+            FROM inventory
+            GROUP BY medicine_id
+        ) stock ON stock.medicine_id = m.id
+        LEFT JOIN (
+            SELECT
+                medicine_id,
+                COUNT(1) AS open_warning_count
+            FROM warning_record
+            WHERE status = 'OPEN'
+            GROUP BY medicine_id
+        ) warn ON warn.medicine_id = m.id
+        <where>
+            m.is_controlled = 1
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    m.medicine_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR m.medicine_code LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="status != null">
+                AND m.status = #{status}
+            </if>
+        </where>
+        ORDER BY m.id DESC
+    </select>
+
+    <select id="selectMedicineById" resultMap="ControlledMedicineVOMap">
+        SELECT
+            m.id,
+            m.medicine_code,
+            m.medicine_name,
+            m.category_id,
+            c.category_name,
+            m.specification,
+            m.unit,
+            m.manufacturer,
+            m.supplier_id,
+            s.supplier_name,
+            m.purchase_price,
+            m.sale_price,
+            m.safe_stock,
+            m.expiry_warning_days,
+            m.status,
+            m.remark,
+            IFNULL(stock.available_stock, 0) AS available_stock,
+            IFNULL(stock.batch_count, 0) AS batch_count,
+            IFNULL(warn.open_warning_count, 0) AS open_warning_count
+        FROM medicine m
+        INNER JOIN medicine_category c ON m.category_id = c.id
+        LEFT JOIN supplier s ON m.supplier_id = s.id
+        LEFT JOIN (
+            SELECT
+                medicine_id,
+                SUM(
+                    CASE
+                        WHEN expiry_date >= CURDATE() THEN (current_quantity - locked_quantity)
+                        ELSE 0
+                    END
+                ) AS available_stock,
+                COUNT(1) AS batch_count
+            FROM inventory
+            GROUP BY medicine_id
+        ) stock ON stock.medicine_id = m.id
+        LEFT JOIN (
+            SELECT
+                medicine_id,
+                COUNT(1) AS open_warning_count
+            FROM warning_record
+            WHERE status = 'OPEN'
+            GROUP BY medicine_id
+        ) warn ON warn.medicine_id = m.id
+        WHERE m.id = #{id}
+          AND m.is_controlled = 1
+        LIMIT 1
+    </select>
+
+    <select id="selectBatchesByMedicineId" resultMap="ControlledBatchVOMap">
+        SELECT
+            i.batch_no,
+            i.current_quantity,
+            i.locked_quantity,
+            CASE
+                WHEN i.expiry_date >= CURDATE() THEN (i.current_quantity - i.locked_quantity)
+                ELSE 0
+            END AS available_quantity,
+            i.production_date,
+            i.expiry_date,
+            i.last_inbound_time,
+            i.last_outbound_time,
+            CASE WHEN i.expiry_date &lt; CURDATE() THEN TRUE ELSE FALSE END AS is_expired,
+            CASE
+                WHEN i.expiry_date >= CURDATE()
+                 AND DATEDIFF(i.expiry_date, CURDATE()) &lt;= m.expiry_warning_days
+                THEN TRUE
+                ELSE FALSE
+            END AS is_expiry_soon
+        FROM inventory i
+        INNER JOIN medicine m ON i.medicine_id = m.id
+        WHERE i.medicine_id = #{medicineId}
+          AND m.is_controlled = 1
+        ORDER BY i.expiry_date ASC, i.id ASC
+    </select>
+
+    <select id="selectRecordsByMedicineId" resultMap="ControlledRecordVOMap">
+        SELECT
+            ir.id,
+            ir.batch_no,
+            ir.change_type,
+            ir.change_quantity,
+            ir.before_quantity,
+            ir.after_quantity,
+            ir.source_type,
+            ir.source_id,
+            ir.operator_id,
+            u.real_name AS operator_name,
+            ir.remark,
+            ir.created_at
+        FROM inventory_record ir
+        INNER JOIN medicine m ON ir.medicine_id = m.id
+        LEFT JOIN sys_user u ON ir.operator_id = u.id
+        WHERE ir.medicine_id = #{medicineId}
+          AND m.is_controlled = 1
+        ORDER BY ir.created_at DESC, ir.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectWarningsByMedicineId" resultMap="WarningRecordVOMap">
+        SELECT
+            wr.id,
+            wr.medicine_id,
+            m.medicine_code,
+            m.medicine_name,
+            wr.batch_no,
+            wr.warning_type,
+            wr.warning_level,
+            wr.warning_message,
+            wr.status,
+            wr.created_at,
+            wr.handled_at
+        FROM warning_record wr
+        INNER JOIN medicine m ON wr.medicine_id = m.id
+        WHERE wr.medicine_id = #{medicineId}
+          AND m.is_controlled = 1
+          <if test="status != null and status != ''">
+            AND wr.status = #{status}
+          </if>
+        ORDER BY wr.created_at DESC, wr.id DESC
+    </select>
+</mapper>

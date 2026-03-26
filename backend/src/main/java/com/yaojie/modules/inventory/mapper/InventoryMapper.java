@@ -13,11 +13,29 @@ public interface InventoryMapper {
 
     Inventory selectByMedicineIdAndBatchNo(@Param("medicineId") Long medicineId, @Param("batchNo") String batchNo);
 
+    Inventory selectByMedicineIdAndBatchNoForUpdate(@Param("medicineId") Long medicineId, @Param("batchNo") String batchNo);
+
     int insert(Inventory inventory);
+
+    int insertIgnore(Inventory inventory);
 
     int updateInbound(Inventory inventory);
 
     int updateOutbound(Inventory inventory);
+
+    int increaseQuantity(
+        @Param("id") Long id,
+        @Param("quantity") Integer quantity,
+        @Param("productionDate") java.time.LocalDate productionDate,
+        @Param("expiryDate") java.time.LocalDate expiryDate,
+        @Param("lastInboundTime") java.time.LocalDateTime lastInboundTime
+    );
+
+    int decreaseQuantity(
+        @Param("id") Long id,
+        @Param("quantity") Integer quantity,
+        @Param("lastOutboundTime") java.time.LocalDateTime lastOutboundTime
+    );
 
     List<InventoryItemVO> selectList(@Param("keyword") String keyword);
 

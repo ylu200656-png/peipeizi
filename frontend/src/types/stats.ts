@@ -10,3 +10,23 @@ export interface DashboardOverview {
   todaySaleAmount: number
   latestWarnings: WarningRecord[]
 }
+
+export interface StatsTrendPoint {
+  statDate: string
+  purchaseAmount: number
+  saleAmount: number
+  purchaseOrderCount: number
+  saleOrderCount: number
+}
+
+export interface StatsInventoryCategoryItem {
+  categoryId: number
+  categoryName: string
+  availableQuantity: number
+  batchCount: number
+}
+
+export interface StatsWarningDistributionItem {
+  warningType: string
+  totalCount: number
+}

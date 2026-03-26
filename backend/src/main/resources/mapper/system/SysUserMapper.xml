@@ -28,12 +28,47 @@
         LIMIT 1
     </select>
 
+    <select id="countByUsername" resultType="int">
+        SELECT COUNT(1)
+        FROM sys_user
+        WHERE username = #{username}
+    </select>
+
+    <insert id="insert" parameterType="com.yaojie.modules.system.entity.SysUser" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_user (
+            username, password_hash, real_name, status
+        ) VALUES (
+            #{username}, #{passwordHash}, #{realName}, #{status}
+        )
+    </insert>
+
+    <update id="updateStatus">
+        UPDATE sys_user
+        SET status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePasswordHash">
+        UPDATE sys_user
+        SET password_hash = #{passwordHash}
+        WHERE id = #{id}
+    </update>
+
     <select id="selectRoleCodesByUserId" resultType="string">
         SELECT r.role_code
         FROM sys_user_role ur
         INNER JOIN sys_role r ON ur.role_id = r.id
         WHERE ur.user_id = #{userId}
         ORDER BY r.id
+    </select>
+
+    <select id="countUsersByRoleCode" resultType="int">
+        SELECT COUNT(DISTINCT ur.user_id)
+        FROM sys_user_role ur
+        INNER JOIN sys_role r ON ur.role_id = r.id
+        INNER JOIN sys_user u ON ur.user_id = u.id
+        WHERE r.role_code = #{roleCode}
+          AND u.status = 1
     </select>
 
     <select id="selectList" resultType="com.yaojie.modules.system.vo.SysUserVO">

@@ -2,8 +2,10 @@ package com.yaojie.modules.system.service.impl;
 
 import com.yaojie.common.enums.ResultCode;
 import com.yaojie.common.exception.BusinessException;
+import com.yaojie.common.utils.PasswordUtil;
 import com.yaojie.modules.audit.entity.OperationLog;
 import com.yaojie.modules.audit.mapper.OperationLogMapper;
+import com.yaojie.modules.system.dto.UserCreateRequest;
 import com.yaojie.modules.system.entity.SysUser;
 import com.yaojie.modules.system.mapper.SysRoleMapper;
 import com.yaojie.modules.system.mapper.SysUserMapper;
@@ -52,36 +54,170 @@ public class SystemUserServiceImpl implements SystemUserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public SysUserVO assignRoles(Long userId, List<Long> roleIds, String operatorUsername, String ip) {
-        SysUser targetUser = sysUserMapper.selectById(userId);
-        if (targetUser == null) {
-            throw new BusinessException(ResultCode.USER_NOT_FOUND);
+    public SysUserVO createUser(UserCreateRequest request, String operatorUsername, String ip) {
+        String username = trimToNull(request.getUsername());
+        String realName = trimToNull(request.getRealName());
+        String password = trimToNull(request.getPassword());
+        Integer status = request.getStatus() == null ? 1 : request.getStatus();
+
+        if (username == null || realName == null || password == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "Username, real name and password are required");
+        }
+        if (status != 0 && status != 1) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "Status is invalid");
+        }
+        if (sysUserMapper.countByUsername(username) > 0) {
+            throw new BusinessException(ResultCode.USERNAME_EXISTS);
         }
 
-        List<Long> safeRoleIds = roleIds == null ? Collections.emptyList() : roleIds;
-        List<SysRoleVO> selectedRoles = safeRoleIds.isEmpty() ? Collections.emptyList() : sysRoleMapper.selectByIds(safeRoleIds);
-        if (selectedRoles.size() != safeRoleIds.size()) {
-            throw new BusinessException(ResultCode.BAD_REQUEST, "Role selection is invalid");
+        List<Long> safeRoleIds = request.getRoleIds() == null ? Collections.emptyList() : request.getRoleIds();
+        List<SysRoleVO> selectedRoles = validateRoleSelection(safeRoleIds);
+
+        SysUser user = new SysUser();
+        user.setUsername(username);
+        user.setRealName(realName);
+        user.setPasswordHash(PasswordUtil.encode(password));
+        user.setStatus(status);
+        sysUserMapper.insert(user);
+
+        if (!safeRoleIds.isEmpty()) {
+            sysUserRoleMapper.batchInsert(user.getId(), safeRoleIds);
         }
+
+        SysUser operator = sysUserMapper.selectByUsername(operatorUsername);
+        insertLog(operator, "SYSTEM", "CREATE_USER", String.valueOf(user.getId()), "Create user " + username, ip);
+
+        SysUserVO userVO = sysUserMapper.selectUserViewById(user.getId());
+        fillUserRoles(userVO);
+        return userVO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public SysUserVO assignRoles(Long userId, List<Long> roleIds, String operatorUsername, String ip) {
+        SysUser targetUser = requireUser(userId);
+        List<Long> safeRoleIds = roleIds == null ? Collections.emptyList() : roleIds;
+        List<SysRoleVO> selectedRoles = validateRoleSelection(safeRoleIds);
+        SysUser operator = sysUserMapper.selectByUsername(operatorUsername);
+
+        validateAdminProtection(userId, targetUser.getStatus(), selectedRoles, operator);
 
         sysUserRoleMapper.deleteByUserId(userId);
         if (!safeRoleIds.isEmpty()) {
             sysUserRoleMapper.batchInsert(userId, safeRoleIds);
         }
 
-        SysUser operator = sysUserMapper.selectByUsername(operatorUsername);
-        OperationLog log = new OperationLog();
-        log.setUserId(operator == null ? null : operator.getId());
-        log.setModuleName("SYSTEM");
-        log.setOperationType("ASSIGN_ROLE");
-        log.setBusinessNo(String.valueOf(userId));
-        log.setContent("Assign roles for user " + targetUser.getUsername());
-        log.setIp(ip);
-        operationLogMapper.insert(log);
+        insertLog(operator, "SYSTEM", "ASSIGN_ROLE", String.valueOf(userId), "Assign roles for user " + targetUser.getUsername(), ip);
 
         SysUserVO userVO = sysUserMapper.selectUserViewById(userId);
         fillUserRoles(userVO);
         return userVO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public SysUserVO updateUserStatus(Long userId, Integer status, String operatorUsername, String ip) {
+        if (status == null || (status != 0 && status != 1)) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "Status is invalid");
+        }
+
+        SysUser targetUser = requireUser(userId);
+        if (targetUser.getStatus() != null && targetUser.getStatus().equals(status)) {
+            SysUserVO userVO = sysUserMapper.selectUserViewById(userId);
+            fillUserRoles(userVO);
+            return userVO;
+        }
+
+        SysUser operator = sysUserMapper.selectByUsername(operatorUsername);
+        if (status == 0) {
+            validateAdminProtection(userId, targetUser.getStatus(), Collections.emptyList(), operator);
+        }
+
+        sysUserMapper.updateStatus(userId, status);
+        insertLog(
+            operator,
+            "SYSTEM",
+            status == 1 ? "ENABLE_USER" : "DISABLE_USER",
+            String.valueOf(userId),
+            (status == 1 ? "Enable user " : "Disable user ") + targetUser.getUsername(),
+            ip
+        );
+
+        SysUserVO userVO = sysUserMapper.selectUserViewById(userId);
+        fillUserRoles(userVO);
+        return userVO;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resetPassword(Long userId, String newPassword, String operatorUsername, String ip) {
+        SysUser targetUser = requireUser(userId);
+        String safePassword = trimToNull(newPassword);
+        if (safePassword == null) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "New password is required");
+        }
+
+        sysUserMapper.updatePasswordHash(userId, PasswordUtil.encode(safePassword));
+        SysUser operator = sysUserMapper.selectByUsername(operatorUsername);
+        insertLog(operator, "SYSTEM", "RESET_PASSWORD", String.valueOf(userId), "Reset password for user " + targetUser.getUsername(), ip);
+    }
+
+    private SysUser requireUser(Long userId) {
+        SysUser targetUser = sysUserMapper.selectById(userId);
+        if (targetUser == null) {
+            throw new BusinessException(ResultCode.USER_NOT_FOUND);
+        }
+        return targetUser;
+    }
+
+    private List<SysRoleVO> validateRoleSelection(List<Long> roleIds) {
+        if (roleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<SysRoleVO> selectedRoles = sysRoleMapper.selectByIds(roleIds);
+        if (selectedRoles.size() != roleIds.size()) {
+            throw new BusinessException(ResultCode.BAD_REQUEST, "Role selection is invalid");
+        }
+        return selectedRoles;
+    }
+
+    private void validateAdminProtection(Long userId, Integer targetStatus, List<SysRoleVO> selectedRoles, SysUser operator) {
+        if (targetStatus == null || targetStatus != 1) {
+            return;
+        }
+
+        List<String> currentRoleCodes = sysUserMapper.selectRoleCodesByUserId(userId);
+        boolean targetCurrentlyAdmin = currentRoleCodes.contains("ADMIN");
+        boolean targetWillRemainAdmin = selectedRoles.stream().anyMatch(role -> "ADMIN".equals(role.getRoleCode()));
+
+        if (targetCurrentlyAdmin && !targetWillRemainAdmin) {
+            int adminCount = sysUserMapper.countUsersByRoleCode("ADMIN");
+            if (adminCount <= 1) {
+                throw new BusinessException(ResultCode.ROLE_ASSIGNMENT_INVALID, "At least one active admin must remain");
+            }
+            if (operator != null && operator.getId().equals(userId)) {
+                throw new BusinessException(ResultCode.ROLE_ASSIGNMENT_INVALID, "Current admin cannot remove own admin role");
+            }
+        }
+    }
+
+    private void insertLog(SysUser operator, String moduleName, String operationType, String businessNo, String content, String ip) {
+        OperationLog log = new OperationLog();
+        log.setUserId(operator == null ? null : operator.getId());
+        log.setModuleName(moduleName);
+        log.setOperationType(operationType);
+        log.setBusinessNo(businessNo);
+        log.setContent(content);
+        log.setIp(ip);
+        operationLogMapper.insert(log);
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void fillUserRoles(SysUserVO user) {

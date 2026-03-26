@@ -1,94 +1,24 @@
 param(
-    [string]$BaseUrl = "http://127.0.0.1:8080/api/v1",
-    [string]$Username = "admin",
-    [string]$Password = "123456",
-    [string]$BackendDir = "C:\Users\30511\Desktop\System\backend"
+    [string]$BaseUrl = $env:BASE_URL,
+    [string]$Username = $env:TEST_USERNAME,
+    [string]$Password = $env:TEST_PASSWORD,
+    [string]$BackendDir = $env:BACKEND_DIR
 )
 
 $ErrorActionPreference = "Stop"
 
-function Test-BackendHealth {
-    param(
-        [string]$HealthUrl
-    )
+. (Join-Path $PSScriptRoot "lib\TestHarness.ps1")
 
-    try {
-        $response = Invoke-RestMethod -Uri $HealthUrl -Method Get -TimeoutSec 5
-        return $response.code -eq 0
-    } catch {
-        return $false
-    }
-}
-
-function Resolve-MavenCommand {
-    $mavenCommand = Get-Command mvn -ErrorAction SilentlyContinue
-    if ($mavenCommand) {
-        return $mavenCommand.Source
-    }
-
-    $fallback = "C:\apache-maven-4.0.0-rc-5\bin\mvn.cmd"
-    if (Test-Path $fallback) {
-        return $fallback
-    }
-
-    throw "mvn command not found"
-}
-
-$healthUrl = "$BaseUrl/health"
-$loginUrl = "$BaseUrl/auth/login"
-$usersUrl = "$BaseUrl/users"
-$rolesUrl = "$BaseUrl/roles"
-$backendJob = $null
-$startedByScript = $false
+$config = Get-SmokeConfig -ScriptRoot $PSScriptRoot -BaseUrl $BaseUrl -BackendDir $BackendDir -Username $Username -Password $Password
+$usersUrl = "$($config.BaseUrl)/users"
+$rolesUrl = "$($config.BaseUrl)/roles"
+$harness = $null
 
 try {
-    if (-not (Test-BackendHealth -HealthUrl $healthUrl)) {
-        $startedByScript = $true
-        $mavenCommand = Resolve-MavenCommand
-        $logPath = Join-Path $BackendDir "user-role-smoke-backend.log"
-        if (Test-Path $logPath) {
-            Remove-Item $logPath -Force
-        }
-
-        $backendJob = Start-Job -ScriptBlock {
-            param(
-                [string]$WorkingDirectory,
-                [string]$MavenPath,
-                [string]$OutputPath
-            )
-
-            Set-Location $WorkingDirectory
-            & $MavenPath "spring-boot:run" *> $OutputPath
-        } -ArgumentList $BackendDir, $mavenCommand, $logPath
-
-        $healthy = $false
-        for ($i = 0; $i -lt 30; $i++) {
-            Start-Sleep -Seconds 2
-            if (Test-BackendHealth -HealthUrl $healthUrl) {
-                $healthy = $true
-                break
-            }
-        }
-
-        if (-not $healthy) {
-            throw "backend start timeout"
-        }
-    }
-
-    $loginBody = @{
-        username = $Username
-        password = $Password
-    } | ConvertTo-Json
-
-    $loginResponse = Invoke-RestMethod -Uri $loginUrl -Method Post -ContentType "application/json" -Body $loginBody
-    $accessToken = $loginResponse.data.accessToken
-    if (-not $accessToken) {
-        throw "accessToken missing from login response"
-    }
-
-    $headers = @{
-        Authorization = "Bearer $accessToken"
-    }
+    $harness = Start-BackendIfNeeded -BaseUrl $config.BaseUrl -BackendDir $config.BackendDir -LogFileName "user-role-smoke-backend.log"
+    $session = New-AuthenticatedSession -LoginUrl $harness.LoginUrl -Username $config.Username -Password $config.Password
+    $loginResponse = $session.LoginResponse
+    $headers = $session.Headers
 
     $userResponse = Invoke-RestMethod -Uri $usersUrl -Headers $headers -Method Get
     $roleResponse = Invoke-RestMethod -Uri $rolesUrl -Headers $headers -Method Get
@@ -112,9 +42,5 @@ try {
         assignedRoleCodes = ($assignResponse.data.roleCodes -join ",")
     } | Format-List
 } finally {
-    if ($startedByScript -and $backendJob) {
-        Stop-Job -Job $backendJob -ErrorAction SilentlyContinue | Out-Null
-        Receive-Job -Job $backendJob -Keep -ErrorAction SilentlyContinue | Out-Null
-        Remove-Job -Job $backendJob -Force -ErrorAction SilentlyContinue | Out-Null
-    }
+    Stop-BackendHarness -Harness $harness
 }

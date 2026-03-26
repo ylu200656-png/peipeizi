@@ -163,20 +163,26 @@ public class SaleServiceImpl implements SaleService {
     }
 
     private void updateInventoryForSale(SaleOrderItem item, SaleOrder saleOrder, Long operatorId, String remark) {
-        Inventory currentInventory = inventoryMapper.selectByMedicineIdAndBatchNo(item.getMedicineId(), item.getBatchNo());
+        Inventory currentInventory = inventoryMapper.selectByMedicineIdAndBatchNoForUpdate(item.getMedicineId(), item.getBatchNo());
         if (currentInventory == null) {
             throw new BusinessException(ResultCode.INVENTORY_NOT_FOUND);
         }
 
         int beforeQuantity = currentInventory.getCurrentQuantity();
         int afterQuantity = beforeQuantity - item.getQuantity();
-        if (afterQuantity < 0) {
+        int availableQuantity = currentInventory.getCurrentQuantity() - currentInventory.getLockedQuantity();
+        if (availableQuantity < item.getQuantity() || afterQuantity < 0) {
             throw new BusinessException(ResultCode.INVENTORY_NOT_ENOUGH);
         }
 
-        currentInventory.setCurrentQuantity(afterQuantity);
-        currentInventory.setLastOutboundTime(LocalDateTime.now());
-        inventoryMapper.updateOutbound(currentInventory);
+        int affectedRows = inventoryMapper.decreaseQuantity(
+            currentInventory.getId(),
+            item.getQuantity(),
+            LocalDateTime.now()
+        );
+        if (affectedRows != 1) {
+            throw new BusinessException(ResultCode.INVENTORY_NOT_ENOUGH);
+        }
 
         InventoryRecord record = new InventoryRecord();
         record.setMedicineId(item.getMedicineId());

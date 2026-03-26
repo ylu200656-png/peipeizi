@@ -15,7 +15,17 @@ public interface SysUserMapper {
 
     SysUser selectById(@Param("id") Long id);
 
+    int countByUsername(@Param("username") String username);
+
     List<String> selectRoleCodesByUserId(@Param("userId") Long userId);
+
+    int countUsersByRoleCode(@Param("roleCode") String roleCode);
+
+    int insert(SysUser user);
+
+    int updateStatus(@Param("id") Long id, @Param("status") Integer status);
+
+    int updatePasswordHash(@Param("id") Long id, @Param("passwordHash") String passwordHash);
 
     List<SysUserVO> selectList();
 

@@ -23,6 +23,14 @@ router.beforeEach(async (to) => {
     return `/login?redirect=${encodeURIComponent(to.fullPath)}`
   }
 
+  const allowedRoles = to.matched
+    .map((record) => record.meta?.allowedRoles as string[] | undefined)
+    .find((roles) => roles && roles.length > 0)
+
+  if (allowedRoles && !allowedRoles.some((role) => authStore.roleCodes.includes(role))) {
+    return '/'
+  }
+
   return true
 })
 

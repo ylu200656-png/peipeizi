@@ -33,7 +33,7 @@ export const staticRoutes: RouteRecordRaw[] = [
       {
         path: 'sale',
         name: 'sale',
-        meta: { title: '销售出库' },
+        meta: { title: '销售出库', allowedRoles: ['ADMIN', 'PHARMACY_MANAGER', 'SALES_CLERK'] },
         component: () => import('@/views/sale/index.vue'),
       },
       {
@@ -51,7 +51,7 @@ export const staticRoutes: RouteRecordRaw[] = [
       {
         path: 'controlled',
         name: 'controlled',
-        meta: { title: '管制药品' },
+        meta: { title: '管制药品', allowedRoles: ['ADMIN', 'PHARMACY_MANAGER', 'INVENTORY_MANAGER'] },
         component: () => import('@/views/controlled/index.vue'),
       },
       {
@@ -63,13 +63,13 @@ export const staticRoutes: RouteRecordRaw[] = [
       {
         path: 'users',
         name: 'users',
-        meta: { title: '用户角色' },
+        meta: { title: '用户管理', allowedRoles: ['ADMIN'] },
         component: () => import('@/views/user/index.vue'),
       },
       {
         path: 'logs',
         name: 'logs',
-        meta: { title: '操作日志' },
+        meta: { title: '操作日志', allowedRoles: ['ADMIN', 'PHARMACY_MANAGER'] },
         component: () => import('@/views/log/index.vue'),
       },
     ],

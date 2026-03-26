@@ -16,7 +16,27 @@
         <result property="status" column="status"/>
         <result property="createdAt" column="created_at"/>
         <result property="handledAt" column="handled_at"/>
+        <result property="handledBy" column="handled_by"/>
+        <result property="handlerName" column="handler_name"/>
+        <result property="handleRemark" column="handle_remark"/>
     </resultMap>
+
+    <sql id="WarningRecordColumns">
+        wr.id,
+        wr.medicine_id,
+        m.medicine_code,
+        m.medicine_name,
+        wr.batch_no,
+        wr.warning_type,
+        wr.warning_level,
+        wr.warning_message,
+        wr.status,
+        wr.created_at,
+        wr.handled_at,
+        wr.handled_by,
+        hu.real_name AS handler_name,
+        wr.handle_remark
+    </sql>
 
     <delete id="deleteOpenWarnings">
         DELETE FROM warning_record WHERE status = 'OPEN'
@@ -76,21 +96,22 @@
           AND DATEDIFF(i.expiry_date, CURDATE()) &lt;= m.expiry_warning_days
     </insert>
 
-    <select id="selectList" resultMap="WarningRecordVOMap">
+    <select id="selectById" resultMap="WarningRecordVOMap">
         SELECT
-            wr.id,
-            wr.medicine_id,
-            m.medicine_code,
-            m.medicine_name,
-            wr.batch_no,
-            wr.warning_type,
-            wr.warning_level,
-            wr.warning_message,
-            wr.status,
-            wr.created_at,
-            wr.handled_at
+            <include refid="WarningRecordColumns"/>
         FROM warning_record wr
         INNER JOIN medicine m ON wr.medicine_id = m.id
+        LEFT JOIN sys_user hu ON wr.handled_by = hu.id
+        WHERE wr.id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="selectList" resultMap="WarningRecordVOMap">
+        SELECT
+            <include refid="WarningRecordColumns"/>
+        FROM warning_record wr
+        INNER JOIN medicine m ON wr.medicine_id = m.id
+        LEFT JOIN sys_user hu ON wr.handled_by = hu.id
         <where>
             <if test="warningType != null and warningType != ''">
                 AND wr.warning_type = #{warningType}
@@ -104,23 +125,24 @@
 
     <select id="selectLatestList" resultMap="WarningRecordVOMap">
         SELECT
-            wr.id,
-            wr.medicine_id,
-            m.medicine_code,
-            m.medicine_name,
-            wr.batch_no,
-            wr.warning_type,
-            wr.warning_level,
-            wr.warning_message,
-            wr.status,
-            wr.created_at,
-            wr.handled_at
+            <include refid="WarningRecordColumns"/>
         FROM warning_record wr
         INNER JOIN medicine m ON wr.medicine_id = m.id
+        LEFT JOIN sys_user hu ON wr.handled_by = hu.id
         WHERE wr.status = 'OPEN'
         ORDER BY wr.created_at DESC, wr.id DESC
         LIMIT #{limit}
     </select>
+
+    <update id="resolveWarning">
+        UPDATE warning_record
+        SET status = 'RESOLVED',
+            handled_at = NOW(),
+            handled_by = #{handledBy},
+            handle_remark = #{handleRemark}
+        WHERE id = #{id}
+          AND status = 'OPEN'
+    </update>
 
     <select id="selectSummary" resultType="com.yaojie.modules.warning.vo.WarningSummaryVO">
         SELECT

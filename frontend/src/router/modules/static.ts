@@ -1,4 +1,13 @@
 import type { RouteRecordRaw } from 'vue-router'
+import {
+  CONTROLLED_VIEW_ROLES,
+  INVENTORY_VIEW_ROLES,
+  LOG_VIEW_ROLES,
+  MEDICINE_MANAGE_ROLES,
+  PURCHASE_MANAGE_ROLES,
+  USER_MANAGE_ROLES,
+  WARNING_MANAGE_ROLES,
+} from '@/constants/permission'
 
 export const staticRoutes: RouteRecordRaw[] = [
   {
@@ -21,13 +30,13 @@ export const staticRoutes: RouteRecordRaw[] = [
       {
         path: 'medicine',
         name: 'medicine',
-        meta: { title: '药品档案' },
+        meta: { title: '药品档案', allowedRoles: [...MEDICINE_MANAGE_ROLES] },
         component: () => import('@/views/medicine/index.vue'),
       },
       {
         path: 'purchase',
         name: 'purchase',
-        meta: { title: '采购入库' },
+        meta: { title: '采购入库', allowedRoles: [...PURCHASE_MANAGE_ROLES] },
         component: () => import('@/views/purchase/index.vue'),
       },
       {
@@ -39,19 +48,19 @@ export const staticRoutes: RouteRecordRaw[] = [
       {
         path: 'inventory',
         name: 'inventory',
-        meta: { title: '库存管理' },
+        meta: { title: '库存管理', allowedRoles: [...INVENTORY_VIEW_ROLES] },
         component: () => import('@/views/inventory/index.vue'),
       },
       {
         path: 'warning',
         name: 'warning',
-        meta: { title: '预警中心' },
+        meta: { title: '预警中心', allowedRoles: [...WARNING_MANAGE_ROLES] },
         component: () => import('@/views/warning/index.vue'),
       },
       {
         path: 'controlled',
         name: 'controlled',
-        meta: { title: '管制药品', allowedRoles: ['ADMIN', 'PHARMACY_MANAGER', 'INVENTORY_MANAGER'] },
+        meta: { title: '管制药品', allowedRoles: [...CONTROLLED_VIEW_ROLES] },
         component: () => import('@/views/controlled/index.vue'),
       },
       {
@@ -63,13 +72,13 @@ export const staticRoutes: RouteRecordRaw[] = [
       {
         path: 'users',
         name: 'users',
-        meta: { title: '用户管理', allowedRoles: ['ADMIN'] },
+        meta: { title: '用户管理', allowedRoles: [...USER_MANAGE_ROLES] },
         component: () => import('@/views/user/index.vue'),
       },
       {
         path: 'logs',
         name: 'logs',
-        meta: { title: '操作日志', allowedRoles: ['ADMIN', 'PHARMACY_MANAGER'] },
+        meta: { title: '操作日志', allowedRoles: [...LOG_VIEW_ROLES] },
         component: () => import('@/views/log/index.vue'),
       },
     ],

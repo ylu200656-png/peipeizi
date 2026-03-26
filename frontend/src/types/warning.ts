@@ -10,6 +10,9 @@ export interface WarningRecord {
   status: string
   createdAt: string
   handledAt?: string
+  handledBy?: number
+  handlerName?: string
+  handleRemark?: string
 }
 
 export interface WarningSummary {
@@ -17,4 +20,8 @@ export interface WarningSummary {
   lowStockCount: number
   expirySoonCount: number
   expiredCount: number
+}
+
+export interface WarningResolveRequest {
+  handleRemark?: string
 }

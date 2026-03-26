@@ -31,21 +31,25 @@ public class MedicineController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('ADMIN','PHARMACY_MANAGER','INVENTORY_MANAGER','SALES_CLERK')")
     public ApiResponse<List<MedicineVO>> list(MedicineQueryRequest queryRequest) {
         return ApiResponse.success(medicineService.list(queryRequest));
     }
 
     @GetMapping("/categories")
+    @PreAuthorize("hasAnyAuthority('ADMIN','PHARMACY_MANAGER','INVENTORY_MANAGER')")
     public ApiResponse<List<MedicineCategoryVO>> categoryList() {
         return ApiResponse.success(medicineService.categoryList());
     }
 
     @GetMapping("/suppliers")
+    @PreAuthorize("hasAnyAuthority('ADMIN','PHARMACY_MANAGER','INVENTORY_MANAGER')")
     public ApiResponse<List<SupplierVO>> supplierList() {
         return ApiResponse.success(medicineService.supplierList());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','PHARMACY_MANAGER','INVENTORY_MANAGER')")
     public ApiResponse<MedicineVO> getById(@PathVariable Long id) {
         return ApiResponse.success(medicineService.getById(id));
     }

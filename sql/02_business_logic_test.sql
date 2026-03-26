@@ -24,10 +24,10 @@ INSERT INTO sys_role (role_code, role_name) VALUES
 ('SALES_CLERK', 'Sales Clerk');
 
 INSERT INTO sys_user (username, password_hash, real_name, status) VALUES
-('admin', '123456', 'Admin User', 1),
-('manager', '123456', 'Manager User', 1),
-('stocker', '123456', 'Stock User', 1),
-('clerk', '123456', 'Clerk User', 1);
+('admin', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', 'Admin User', 1),
+('manager', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', 'Manager User', 1),
+('stocker', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', 'Stock User', 1),
+('clerk', '$2a$10$dPpBEtp.icfkXCIFwrmIFO5d9u4V5EWYlqCIh5wZonKao8mV2HXOO', 'Clerk User', 1);
 
 INSERT INTO sys_user_role (user_id, role_id)
 SELECT u.id, r.id

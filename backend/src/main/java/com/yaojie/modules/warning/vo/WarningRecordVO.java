@@ -18,4 +18,7 @@ public class WarningRecordVO {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime handledAt;
+    private Long handledBy;
+    private String handlerName;
+    private String handleRemark;
 }

@@ -2,31 +2,36 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
+import {
+  CONTROLLED_VIEW_ROLES,
+  INVENTORY_VIEW_ROLES,
+  LOG_VIEW_ROLES,
+  MEDICINE_MANAGE_ROLES,
+  PURCHASE_MANAGE_ROLES,
+  USER_MANAGE_ROLES,
+  WARNING_MANAGE_ROLES,
+} from '@/constants/permission'
 import { useAuthStore } from '@/store/modules/auth'
+import { hasAnyRole } from '@/utils/permission'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 const menuItems = [
   { path: '/', label: '首页' },
-  { path: '/medicine', label: '药品档案' },
-  { path: '/purchase', label: '采购入库' },
+  { path: '/medicine', label: '药品档案', allowedRoles: MEDICINE_MANAGE_ROLES },
+  { path: '/purchase', label: '采购入库', allowedRoles: PURCHASE_MANAGE_ROLES },
   { path: '/sale', label: '销售出库', allowedRoles: ['ADMIN', 'PHARMACY_MANAGER', 'SALES_CLERK'] },
-  { path: '/inventory', label: '库存管理' },
-  { path: '/warning', label: '预警中心' },
-  { path: '/controlled', label: '管制药品', allowedRoles: ['ADMIN', 'PHARMACY_MANAGER', 'INVENTORY_MANAGER'] },
+  { path: '/inventory', label: '库存管理', allowedRoles: INVENTORY_VIEW_ROLES },
+  { path: '/warning', label: '预警中心', allowedRoles: WARNING_MANAGE_ROLES },
+  { path: '/controlled', label: '管制药品', allowedRoles: CONTROLLED_VIEW_ROLES },
   { path: '/stats', label: '统计分析' },
-  { path: '/users', label: '用户管理', allowedRoles: ['ADMIN'] },
-  { path: '/logs', label: '操作日志', allowedRoles: ['ADMIN', 'PHARMACY_MANAGER'] },
+  { path: '/users', label: '用户管理', allowedRoles: USER_MANAGE_ROLES },
+  { path: '/logs', label: '操作日志', allowedRoles: LOG_VIEW_ROLES },
 ]
 
 const visibleMenuItems = computed(() =>
-  menuItems.filter((item) => {
-    if (!item.allowedRoles?.length) {
-      return true
-    }
-    return item.allowedRoles.some((role) => authStore.roleCodes.includes(role))
-  }),
+  menuItems.filter((item) => !item.allowedRoles || hasAnyRole(authStore.roleCodes, item.allowedRoles)),
 )
 
 const userName = computed(() => authStore.user?.realName || authStore.user?.username || '未登录')

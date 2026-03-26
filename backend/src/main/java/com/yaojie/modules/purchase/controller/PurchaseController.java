@@ -19,6 +19,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/purchases")
+@PreAuthorize("hasAnyAuthority('ADMIN','PHARMACY_MANAGER','INVENTORY_MANAGER')")
 public class PurchaseController {
 
     private final PurchaseService purchaseService;
@@ -38,7 +39,6 @@ public class PurchaseController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN','PHARMACY_MANAGER','INVENTORY_MANAGER')")
     public ApiResponse<PurchaseOrderVO> create(
         @Valid @RequestBody PurchaseCreateRequest request,
         Authentication authentication,

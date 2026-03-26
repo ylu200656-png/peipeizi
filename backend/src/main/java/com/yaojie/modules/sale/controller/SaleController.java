@@ -19,6 +19,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/sales")
+@PreAuthorize("hasAnyAuthority('ADMIN','PHARMACY_MANAGER','SALES_CLERK')")
 public class SaleController {
 
     private final SaleService saleService;
@@ -38,7 +39,6 @@ public class SaleController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('ADMIN','PHARMACY_MANAGER','SALES_CLERK')")
     public ApiResponse<SaleOrderVO> create(
         @Valid @RequestBody SaleCreateRequest request,
         Authentication authentication,

@@ -18,9 +18,17 @@ public interface WarningRecordMapper {
 
     int insertExpirySoonWarnings();
 
+    WarningRecordVO selectById(@Param("id") Long id);
+
     List<WarningRecordVO> selectList(@Param("warningType") String warningType, @Param("status") String status);
 
     List<WarningRecordVO> selectLatestList(@Param("limit") Integer limit);
+
+    int resolveWarning(
+        @Param("id") Long id,
+        @Param("handledBy") Long handledBy,
+        @Param("handleRemark") String handleRemark
+    );
 
     WarningSummaryVO selectSummary();
 }

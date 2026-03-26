@@ -179,7 +179,11 @@ CREATE TABLE warning_record (
   status ENUM('OPEN', 'RESOLVED') NOT NULL DEFAULT 'OPEN',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   handled_at DATETIME NULL,
+  handled_by BIGINT UNSIGNED NULL,
+  handle_remark VARCHAR(255) NULL,
   KEY idx_warning_record_status_type (status, warning_type),
+  KEY idx_warning_record_handled_by (handled_by),
+  CONSTRAINT fk_warning_record_handler FOREIGN KEY (handled_by) REFERENCES sys_user(id),
   CONSTRAINT fk_warning_record_medicine FOREIGN KEY (medicine_id) REFERENCES medicine(id)
 );
 
